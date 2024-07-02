@@ -25,7 +25,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	// split the line by spaces
+
 	reqUrl := strings.Split(line, " ")[1][1:]
 	splitLine := strings.Split(line, " ")[1]
 	bodySplit := strings.Split(splitLine, "/")
