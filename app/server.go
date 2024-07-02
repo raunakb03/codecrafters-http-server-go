@@ -40,6 +40,6 @@ func main() {
 		conn.Write([]byte(res))
 	} else {
         fmt.Println("second type")
-		conn.Write([]byte("HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: 0\r\n\r\n"))
+		conn.Write([]byte("HTTP/1.1 404 Not Found\r\n\r\n"))
 	}
 }
