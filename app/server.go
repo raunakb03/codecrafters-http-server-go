@@ -20,7 +20,6 @@ func main() {
 		fmt.Println("Error accepting connection: ", err.Error())
 		os.Exit(1)
 	}
-	conn.Write([]byte("HTTP/1.1 200 OK\r\n\r\n"))
 	reader := bufio.NewReader(conn)
 	line, err := reader.ReadString('\n')
 	if err != nil {
@@ -35,9 +34,9 @@ func main() {
 		res := fmt.Sprintf("HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: %d\r\n\r\n%s", len(bodySplit[2]), bodySplit[2])
 		fmt.Println("this is the response ", res)
 		_, err = conn.Write([]byte(res))
-        if err != nil {
-            panic(err)
-        }
+		if err != nil {
+			panic(err)
+		}
 	} else {
 		if reqUrl == "" {
 			fmt.Println("exe second")
