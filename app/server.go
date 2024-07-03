@@ -23,21 +23,13 @@ func sendResponse(conn net.Conn, res string) {
 }
 
 func handleUserAgent(conn net.Conn, req *http.Request) {
-    header := req.Header.Get("User-Agent")
-    fmt.Println(header)
-    res := fmt.Sprintf("HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: %d\r\n\r\n%s", len(header), header)
-    sendResponse(conn, res)
-
+	header := req.Header.Get("User-Agent")
+	res := fmt.Sprintf("HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: %d\r\n\r\n%s", len(header), header)
+	sendResponse(conn, res)
 }
 
-func main() {
-	fmt.Println("Logs from your program will appear here!")
-	l, err := net.Listen("tcp", "0.0.0.0:4221")
-	handleError(err, "Failed to bind to port 4221")
-
-	conn, err := l.Accept()
-	handleError(err, "Failed to accept connection")
-
+func handleConnection(conn net.Conn) {
+    defer conn.Close()
 	reader := bufio.NewReader(conn)
 	req, err := http.ReadRequest(reader)
 	handleError(err, "Failed to read request")
@@ -56,5 +48,19 @@ func main() {
 		} else {
 			sendResponse(conn, "HTTP/1.1 404 Not Found\r\n\r\n")
 		}
+	}
+}
+
+func main() {
+	fmt.Println("Logs from your program will appear here!")
+	l, err := net.Listen("tcp", "0.0.0.0:4221")
+	handleError(err, "Failed to bind to port 4221")
+    defer l.Close()
+
+	for {
+		conn, err := l.Accept()
+		handleError(err, "Failed to accept connection")
+
+		go handleConnection(conn)
 	}
 }
