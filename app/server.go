@@ -62,7 +62,7 @@ func handleFileRequest(conn net.Conn, reqUrl string) {
         handleError(err, "Failed to read file")
     }
     fileContent := string(f) 
-    res := fmt.Sprintf("HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: %d\r\n\r\n%s", fileInfo.Size(), fileContent)
+    res := fmt.Sprintf("HTTP/1.1 200 OK\r\nContent-Type: application/octet-stream\r\nContent-Length: %d\r\n\r\n%s", fileInfo.Size(), fileContent)
     sendResponse(conn, res)
 }
 
