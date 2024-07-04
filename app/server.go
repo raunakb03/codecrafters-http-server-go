@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"flag"
 	"fmt"
+	"io"
 	"net"
 	"net/http"
 	"os"
@@ -33,8 +34,6 @@ func handleUserAgent(conn net.Conn, req *http.Request) {
 }
 
 func handleFileRequest(conn net.Conn, reqUrl string) {
-	fmt.Println("this is the req url ", reqUrl)
-	fmt.Println("directory path is ", directoryPath)
 	fileName := strings.Split(reqUrl, "/")[1]
 
 	// checking if file exists or not
@@ -66,6 +65,17 @@ func handleFileRequest(conn net.Conn, reqUrl string) {
     sendResponse(conn, res)
 }
 
+func handlePOSTRequest(conn net.Conn, reqUrl string, body string) {
+	fileName := strings.Split(reqUrl, "/")[1]
+
+    // create a file with this name
+    _, err := os.Create(directoryPath + fileName)
+    handleError(err, "Failed to create file")
+    err = os.WriteFile(directoryPath + fileName, []byte(body), 0644)
+    handleError(err, "Failed to write to file")
+    sendResponse(conn, "HTTP/1.1 201 Created\r\n\r\n")
+}
+
 func handleConnection(conn net.Conn) {
 	defer conn.Close()
 	reader := bufio.NewReader(conn)
@@ -78,9 +88,16 @@ func handleConnection(conn net.Conn) {
 	filereq, err := regexp.MatchString("^files/.+$", reqUrl)
 	handleError(err, "Failed to match regex")
 
+    // get the body from the request
+    body, err := io.ReadAll(req.Body)
+    handleError(err, "Failed to read body")
+
+
 	if reqUrl == "user-agent" {
 		handleUserAgent(conn, req)
-	} else if filereq {
+	} else if filereq && string(body) != "" {
+        handlePOSTRequest(conn, reqUrl, string(body))
+    } else if filereq {
 		handleFileRequest(conn, reqUrl)
 	} else if len(splitLine) > 1 && splitLine[0] == "echo" {
 		res := fmt.Sprintf("HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: %d\r\n\r\n%s", len(splitLine[1]), splitLine[1])
@@ -100,7 +117,6 @@ func main() {
 	handleError(err, "Failed to bind to port 4221")
 
 	dirFlag := flag.String("directory", "", "the directory to serve files from")
-    fmt.Println("this is the dir flag ", *dirFlag)
 	flag.Parse()
 	directoryPath = *dirFlag
     if directoryPath != "" {
