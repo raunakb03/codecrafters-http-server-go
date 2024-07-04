@@ -104,7 +104,7 @@ func main() {
 	directoryPath = *dirFlag
 
 	if _, err = os.Stat(*dirFlag); os.IsNotExist(err) {
-		err = os.Mkdir(*dirFlag, 0755)
+		err = os.MkdirAll(*dirFlag, 0755)
 		handleError(err, "Failed to create directory")
 	} else if err != nil {
 		handleError(err, "Failed to check if directory exists")
