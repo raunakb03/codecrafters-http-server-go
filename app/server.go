@@ -100,15 +100,17 @@ func main() {
 	handleError(err, "Failed to bind to port 4221")
 
 	dirFlag := flag.String("directory", "", "the directory to serve files from")
+    fmt.Println("this is the dir flag ", *dirFlag)
 	flag.Parse()
 	directoryPath = *dirFlag
-
-	if _, err = os.Stat(*dirFlag); os.IsNotExist(err) {
-		err = os.MkdirAll(*dirFlag, 0755)
-		handleError(err, "Failed to create directory")
-	} else if err != nil {
-		handleError(err, "Failed to check if directory exists")
-	}
+    if directoryPath != "" {
+        if _, err = os.Stat(*dirFlag); os.IsNotExist(err) {
+            err = os.MkdirAll(*dirFlag, 0755)
+            handleError(err, "Failed to create directory")
+        } else if err != nil {
+            handleError(err, "Failed to check if directory exists")
+        }
+    }
 
 	defer l.Close()
 
