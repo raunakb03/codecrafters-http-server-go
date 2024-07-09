@@ -76,14 +76,22 @@ func handlePOSTRequest(conn net.Conn, reqUrl string, body string) {
 	sendResponse(conn, "HTTP/1.1 201 Created\r\n\r\n")
 }
 
-func handleEncoding(conn net.Conn, header string) {
+func handleEncoding(conn net.Conn, header []string) {
 	var res string
-	if header == "gzip" {
-		res = fmt.Sprintf("HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Encoding: %s\r\n\r\n", header)
+	var foundGzip bool
+
+	for _, h := range header {
+        fmt.Println(h)
+		if h == "gzip" {
+			foundGzip = true
+			break
+		}
+	}
+	if foundGzip {
+		res = fmt.Sprintf("HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Encoding: %s\r\n\r\n", "gzip")
 	} else {
 		res = "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\n\r\n"
 	}
-
 	sendResponse(conn, res)
 }
 
@@ -104,10 +112,12 @@ func handleConnection(conn net.Conn) {
 	handleError(err, "Failed to read body")
 
 	// get the headers
-	header := req.Header.Get("Accept-Encoding")
-	fmt.Println("this is the header ", header)
+	header := strings.Split(req.Header.Get("Accept-Encoding"), ",")
+    for i, h := range header {
+        header[i]= strings.TrimSpace(h)
+    }
 
-	if header != "" {
+	if len(header) > 0 {
 		handleEncoding(conn, header)
 	} else if reqUrl == "user-agent" {
 		handleUserAgent(conn, req)
