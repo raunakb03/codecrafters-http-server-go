@@ -28,12 +28,14 @@ func sendResponse(conn net.Conn, res string) {
 }
 
 func handleUserAgent(conn net.Conn, req *http.Request) {
+    fmt.Println("handle user agent")
 	header := req.Header.Get("User-Agent")
 	res := fmt.Sprintf("HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: %d\r\n\r\n%s", len(header), header)
 	sendResponse(conn, res)
 }
 
 func handleFileRequest(conn net.Conn, reqUrl string) {
+    fmt.Println("handle file req is exe")
 	fileName := strings.Split(reqUrl, "/")[1]
 
 	// checking if file exists or not
@@ -66,6 +68,7 @@ func handleFileRequest(conn net.Conn, reqUrl string) {
 }
 
 func handlePOSTRequest(conn net.Conn, reqUrl string, body string) {
+    fmt.Println("handle post req is exe ")
 	fileName := strings.Split(reqUrl, "/")[1]
 
 	// create a file with this name
@@ -77,6 +80,7 @@ func handlePOSTRequest(conn net.Conn, reqUrl string, body string) {
 }
 
 func handleEncoding(conn net.Conn, header []string) {
+    fmt.Println("handle encoding")
 	var res string
 	var foundGzip bool
 
@@ -113,11 +117,17 @@ func handleConnection(conn net.Conn) {
 
 	// get the headers
 	header := strings.Split(req.Header.Get("Accept-Encoding"), ",")
-    for i, h := range header {
-        header[i]= strings.TrimSpace(h)
+    var finalHeader []string
+    for _, h := range header {
+        temp := strings.TrimSpace(h)
+        if temp != "" {
+            finalHeader = append(finalHeader, temp)
+        }
     }
 
-	if len(header) > 0 {
+    fmt.Println("final header len is '", len(finalHeader))
+
+	if len(finalHeader) > 0 {
 		handleEncoding(conn, header)
 	} else if reqUrl == "user-agent" {
 		handleUserAgent(conn, req)
