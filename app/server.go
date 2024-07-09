@@ -81,7 +81,7 @@ func handleEncoding(conn net.Conn, header string) {
 	if header == "gzip" {
 		res = fmt.Sprintf("HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Encoding: %s\r\n\r\n", header)
 	} else {
-		res = "HTTP/1.1 200 Ok\r\nContent-Type: text/plain\r\n\r\n"
+		res = "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\n\r\n"
 	}
 
 	sendResponse(conn, res)
