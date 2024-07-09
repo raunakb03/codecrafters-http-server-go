@@ -56,24 +56,35 @@ func handleFileRequest(conn net.Conn, reqUrl string) {
 		handleError(err, "Failed to get file info")
 	}
 
-    f, err := os.ReadFile(directoryPath + fileName)
-    if err != nil {
-        handleError(err, "Failed to read file")
-    }
-    fileContent := string(f) 
-    res := fmt.Sprintf("HTTP/1.1 200 OK\r\nContent-Type: application/octet-stream\r\nContent-Length: %d\r\n\r\n%s", fileInfo.Size(), fileContent)
-    sendResponse(conn, res)
+	f, err := os.ReadFile(directoryPath + fileName)
+	if err != nil {
+		handleError(err, "Failed to read file")
+	}
+	fileContent := string(f)
+	res := fmt.Sprintf("HTTP/1.1 200 OK\r\nContent-Type: application/octet-stream\r\nContent-Length: %d\r\n\r\n%s", fileInfo.Size(), fileContent)
+	sendResponse(conn, res)
 }
 
 func handlePOSTRequest(conn net.Conn, reqUrl string, body string) {
 	fileName := strings.Split(reqUrl, "/")[1]
 
-    // create a file with this name
-    _, err := os.Create(directoryPath + fileName)
-    handleError(err, "Failed to create file")
-    err = os.WriteFile(directoryPath + fileName, []byte(body), 0644)
-    handleError(err, "Failed to write to file")
-    sendResponse(conn, "HTTP/1.1 201 Created\r\n\r\n")
+	// create a file with this name
+	_, err := os.Create(directoryPath + fileName)
+	handleError(err, "Failed to create file")
+	err = os.WriteFile(directoryPath+fileName, []byte(body), 0644)
+	handleError(err, "Failed to write to file")
+	sendResponse(conn, "HTTP/1.1 201 Created\r\n\r\n")
+}
+
+func handleEncoding(conn net.Conn, header string) {
+	var res string
+	if header == "gzip" {
+		res = fmt.Sprintf("HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Encoding: %s\r\n\r\n", header)
+	} else {
+		res = "HTTP/1.1 200 Ok\r\nContent-Type: text/plain\r\n\r\n"
+	}
+
+	sendResponse(conn, res)
 }
 
 func handleConnection(conn net.Conn) {
@@ -88,16 +99,21 @@ func handleConnection(conn net.Conn) {
 	filereq, err := regexp.MatchString("^files/.+$", reqUrl)
 	handleError(err, "Failed to match regex")
 
-    // get the body from the request
-    body, err := io.ReadAll(req.Body)
-    handleError(err, "Failed to read body")
+	// get the body from the request
+	body, err := io.ReadAll(req.Body)
+	handleError(err, "Failed to read body")
 
+	// get the headers
+	header := req.Header.Get("Accept-Encoding")
+	fmt.Println("this is the header ", header)
 
-	if reqUrl == "user-agent" {
+	if header != "" {
+		handleEncoding(conn, header)
+	} else if reqUrl == "user-agent" {
 		handleUserAgent(conn, req)
 	} else if filereq && string(body) != "" {
-        handlePOSTRequest(conn, reqUrl, string(body))
-    } else if filereq {
+		handlePOSTRequest(conn, reqUrl, string(body))
+	} else if filereq {
 		handleFileRequest(conn, reqUrl)
 	} else if len(splitLine) > 1 && splitLine[0] == "echo" {
 		res := fmt.Sprintf("HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: %d\r\n\r\n%s", len(splitLine[1]), splitLine[1])
@@ -119,14 +135,14 @@ func main() {
 	dirFlag := flag.String("directory", "", "the directory to serve files from")
 	flag.Parse()
 	directoryPath = *dirFlag
-    if directoryPath != "" {
-        if _, err = os.Stat(*dirFlag); os.IsNotExist(err) {
-            err = os.MkdirAll(*dirFlag, 0755)
-            handleError(err, "Failed to create directory")
-        } else if err != nil {
-            handleError(err, "Failed to check if directory exists")
-        }
-    }
+	if directoryPath != "" {
+		if _, err = os.Stat(*dirFlag); os.IsNotExist(err) {
+			err = os.MkdirAll(*dirFlag, 0755)
+			handleError(err, "Failed to create directory")
+		} else if err != nil {
+			handleError(err, "Failed to check if directory exists")
+		}
+	}
 
 	defer l.Close()
 
