@@ -80,7 +80,6 @@ func handlePOSTRequest(conn net.Conn, reqUrl string, body string) {
 }
 
 func handleEncoding(conn net.Conn, header []string) {
-    fmt.Println("handle encoding")
 	var res string
 	var foundGzip bool
 
@@ -119,16 +118,14 @@ func handleConnection(conn net.Conn) {
 	header := strings.Split(req.Header.Get("Accept-Encoding"), ",")
     var finalHeader []string
     for _, h := range header {
-        temp := strings.TrimSpace(h)
+        temp:= strings.TrimSpace(h)
         if temp != "" {
             finalHeader = append(finalHeader, temp)
         }
     }
 
-    fmt.Println("final header len is '", len(finalHeader))
-
 	if len(finalHeader) > 0 {
-		handleEncoding(conn, header)
+		handleEncoding(conn, finalHeader)
 	} else if reqUrl == "user-agent" {
 		handleUserAgent(conn, req)
 	} else if filereq && string(body) != "" {
