@@ -2,6 +2,8 @@ package main
 
 import (
 	"bufio"
+	"bytes"
+	"compress/gzip"
 	"flag"
 	"fmt"
 	"io"
@@ -28,14 +30,12 @@ func sendResponse(conn net.Conn, res string) {
 }
 
 func handleUserAgent(conn net.Conn, req *http.Request) {
-    fmt.Println("handle user agent")
 	header := req.Header.Get("User-Agent")
 	res := fmt.Sprintf("HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: %d\r\n\r\n%s", len(header), header)
 	sendResponse(conn, res)
 }
 
 func handleFileRequest(conn net.Conn, reqUrl string) {
-    fmt.Println("handle file req is exe")
 	fileName := strings.Split(reqUrl, "/")[1]
 
 	// checking if file exists or not
@@ -68,7 +68,6 @@ func handleFileRequest(conn net.Conn, reqUrl string) {
 }
 
 func handlePOSTRequest(conn net.Conn, reqUrl string, body string) {
-    fmt.Println("handle post req is exe ")
 	fileName := strings.Split(reqUrl, "/")[1]
 
 	// create a file with this name
@@ -79,23 +78,34 @@ func handlePOSTRequest(conn net.Conn, reqUrl string, body string) {
 	sendResponse(conn, "HTTP/1.1 201 Created\r\n\r\n")
 }
 
-func handleEncoding(conn net.Conn, header []string) {
+func handleEncoding(conn net.Conn, header []string, reqUrl string) {
 	var res string
 	var foundGzip bool
 
 	for _, h := range header {
-        fmt.Println(h)
 		if h == "gzip" {
 			foundGzip = true
 			break
 		}
 	}
 	if foundGzip {
-		res = fmt.Sprintf("HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Encoding: %s\r\n\r\n", "gzip")
+        data := strings.Split(reqUrl, "/")[1]
+        compressedData := handleGzipDataCompression(data)
+        res = fmt.Sprintf("HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Encoding: gzip\r\nContent-Length: %d\r\n\r\n%s", len(compressedData), compressedData)
+        sendResponse(conn, res)
 	} else {
 		res = "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\n\r\n"
 	}
 	sendResponse(conn, res)
+}
+
+func handleGzipDataCompression(data string) string {
+    var b bytes.Buffer
+    w := gzip.NewWriter(&b)
+    w.Write([]byte(data))
+    w.Close()
+    compressedData := b.String()
+    return compressedData
 }
 
 func handleConnection(conn net.Conn) {
@@ -125,7 +135,7 @@ func handleConnection(conn net.Conn) {
     }
 
 	if len(finalHeader) > 0 {
-		handleEncoding(conn, finalHeader)
+		handleEncoding(conn, finalHeader, reqUrl)
 	} else if reqUrl == "user-agent" {
 		handleUserAgent(conn, req)
 	} else if filereq && string(body) != "" {
